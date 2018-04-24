@@ -1,0 +1,91 @@
+<html>
+<head>
+<title>Hello World
+</title>
+</head>
+<body class="container">
+  <h1> Sample Voting Application </h1>
+  <div class="table-responsive">
+    <table border =1>
+      <thead>
+        <tr>
+          <th>Candidate</th>
+          <th>Votes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Rama</td>
+          <td id="Candidate-1"></td>
+        </tr>
+        <tr>
+          <td>Nick</td>
+          <td id="Candidate-2"></td>
+        </tr>
+        <tr>
+          <td>Joe</td>
+          <td id="Candidate-3"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <input id="Candidate" type="text">
+  <button onclick="deploycontract()">Deploy</button>
+ <!-- <button onclick="voteForCandidate()">Vote</button>  -->
+ <a href="#" onclick="voteForCandidate()" class="btn btn-primary">Vote</a>
+  <button onclick="totalVotes()">Result</button>
+</body>
+<script src="./web3.js-develop/dist/web3.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script>
+var Web3 = require('web3');
+var web3=new Web3();
+web3.setProvider(new web3.providers.HttpProvider("http://localhost:8545"));
+web3.isConnected();
+
+var contractAddr = "0x7f6d0be4d8d7395952bb81c905533df79fe9d05b";
+
+var candidates = {"Rama": "Candidate-1", "Nick":"Candidate-2", "Joe": "Candidate-3"};
+var votingContract = web3.eth.contract([{"constant":true,"inputs":[{"name":"candidate","type":"bytes32"}],"name":"totalVotesFor","outputs":[{"name":"","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"candidate","type":"bytes32"}],"name":"validCandidate","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"votesReceived","outputs":[{"name":"","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"candidateList","outputs":[{"name":"","type":"bytes32"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"candidate","type":"bytes32"}],"name":"voteForCandidate","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"inputs":[{"name":"candidateNames","type":"bytes32[]"}],"payable":false,"stateMutability":"nonpayable","type":"constructor"}]);
+function deploycontract(){
+//var candidateNames = {"Rama": "Candidate-1", "Nick":"Candidate-2", "Joe": "Candidate-3"};
+var voting = votingContract.new(
+  // candidateNames,
+   {
+     from: web3.eth.accounts[0],
+     data: '0x6060604052341561000f57600080fd5b6040516103d13803806103d1833981016040528080518201919050508060019080519060200190610041929190610048565b50506100c0565b82805482825590600052602060002090810192821561008a579160200282015b82811115610089578251829060001916905591602001919060010190610068565b5b509050610097919061009b565b5090565b6100bd91905b808211156100b95760008160009055506001016100a1565b5090565b90565b610302806100cf6000396000f30060606040526004361061006d576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680632f265cf714610072578063392e6678146100b35780637021939f146100f2578063b13c744b14610133578063cc9ab26714610172575b600080fd5b341561007d57600080fd5b610097600480803560001916906020019091905050610199565b604051808260ff1660ff16815260200191505060405180910390f35b34156100be57600080fd5b6100d86004808035600019169060200190919050506101de565b604051808215151515815260200191505060405180910390f35b34156100fd57600080fd5b610117600480803560001916906020019091905050610235565b604051808260ff1660ff16815260200191505060405180910390f35b341561013e57600080fd5b6101546004808035906020019091905050610255565b60405180826000191660001916815260200191505060405180910390f35b341561017d57600080fd5b610197600480803560001916906020019091905050610279565b005b60006101a4826101de565b15156101af57600080fd5b600080836000191660001916815260200190815260200160002060009054906101000a900460ff169050919050565b6000806000905060018054905081101561022e57826000191660018281548110151561020657fe5b906000526020600020900154600019161415610225576001915061022f565b6000915061022f565b5b50919050565b60006020528060005260406000206000915054906101000a900460ff1681565b60018181548110151561026457fe5b90600052602060002090016000915090505481565b610282816101de565b151561028d57600080fd5b6001600080836000191660001916815260200190815260200160002060008282829054906101000a900460ff160192506101000a81548160ff021916908360ff160217905550505600a165627a7a723058206d38771c7b330b3cc8945346fb90211fd6f36711b090dd4a499568d807ef8aa30029',
+     gas: '4700000'
+   }, function (e, contract){
+    console.log(e, contract);
+    if (typeof contract.address !== 'undefined') {
+         console.log('Contract mined! address: ' + contract.address + ' transactionHash: ' + contract.transactionHash);
+    }
+ })
+}
+var contractInstance = votingContract.at(contractAddr);
+function voteForCandidate() {
+  candidateName = $("#candidate").val();
+  web3.eth.getAccounts()
+  .then((accounts) => {
+    return contractInstance.methods.voteForCandidate(asciiToHex(candidateName)).send({from: accounts[0]})
+  })
+  .then(() => {
+    return contractInstance.methods.totalVotesFor(asciiToHex(candidateName)).call();
+  })
+  .then((voteCount) => {
+    const div_id = candidates[candidateName];
+    $("#" + div_id).html(voteCount);
+  });
+}
+$(document).ready(function() {
+  candidateNames = Object.keys(candidates);
+  for (var i = 0; i < candidateNames.length; i++) {
+    let name = candidateNames[i];
+    console.log(name);
+    let val = contractInstance.totalVotesFor.call(name).toString();
+    console.log(val);
+    $("#" + candidates[name]).html(val);
+  }
+});
+</script>
+</html>
